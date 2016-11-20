@@ -1,25 +1,126 @@
 from turtle import *
 from math import *
 import time
+from sets import Set
 
 start = ()
 end = ()
 dimensions = ()
 obstacles = []
+lower_rightmost_vertex = None
 
 def create_objects(input_file):
     # for each object in input file
-    obj = Obstacle( #list vertices for each object )  
+    obj = Obstacle() #list vertices for each object )  
     return obj
 
-def class Obstacle:
-    vertices = []
-    neighbors = [[]] #valid neighbors for each vertex in the obstacle
-    Obstacle( vertices ):
-       vertices =  
+class Obstacle:
+    vertices = Set([])
+    neighbors = [[]]
+    
+    def __init__(self):
+       self.vertices =  []
+    
+    def add_vertex(self, location):
+        self.vertices.append(location)
+    
+    def set_vertices(self, param_vertices):
+        self.vertices = param_vertices
 
-def grow_obstacles((robot_width,robot_height)):
+def flip_x_and_y(location):
+    return (-1*location[0], -1*location[1])
+
+def add_vertices(vertex1, vertex2):
+    return (vertex1[0] + vertex2[0], vertex1[1] + vertex2[1])
+
+
+def dist(vertex):
+    global lower_rightmost_vertex
+    return sqrt((vertex[0] - lower_rightmost_vertex[0])**2 + (vertex[1] - lower_rightmost_vertex[1])**2)
+
+def angle_comparison(vertex1, vertex2):
+    global lower_rightmost_vertex
+    vertex1_x = (vertex1[0]-lower_rightmost_vertex[0])
+    vertex1_dist = dist(vertex1)
+    vertex2_x = (vertex2[0]-lower_rightmost_vertex[0])
+    vertex2_dist = dist(vertex2)
+    vertex1_angle = vertex1_x / vertex1_dist
+    vertex2_angle = vertex2_x / vertex2_dist
+    vertex1 
+    if vertex1_angle < vertex2_angle:
+        return 1
+    elif vertex1_angle > vertex2_angle:
+        return -1
+    else:
+        if dist(vertex1) < dist(vertex2):
+            return -1
+        elif dist(vertex1) > dist(vertex2):
+            return 1
+        return 0
+
+def isLeftTurn(vertex1, vertex2, vertex3):
+    value1 = (vertex2[0] - vertex1[0]) * (vertex3[1] - vertex1[1])
+    value2 = (vertex2[1] - vertex1[1]) * (vertex3[0] - vertex1[0])
+    if value1-value2 > 0:
+        return True
+    return False
+    
+def create_convex_hull(vertices):
+    global lower_rightmost_vertex
+    stack = []
+    if vertices and len(vertices) > 0:
+        # Find lowest rightmost point
+        lower_rightmost_vertex = (float("-inf"), float("inf"))
+        for vertex in vertices:
+            if vertex[1] < lower_rightmost_vertex[1]:
+                lower_rightmost_vertex = vertex
+            elif vertex[1] == lower_rightmost_vertex[1] \
+                 and vertex[0] > lower_rightmost_vertex[0]:
+                lower_rightmost_vertex = vertex
+        vertices.remove(lower_rightmost_vertex)
+        # Sort vertices by angle to lowest rightmost point
+        vertices = list(vertices)
+        vertices.sort(cmp=angle_comparison)
+        # Add in the first and last points
+        stack.append(vertices.pop())
+        stack.append(lower_rightmost_vertex)
+        # Loop through the vertices and add the ones that
+        # will make a left turn
+        for vertex in vertices:
+            vertex2 = stack.pop()
+            vertex1 = stack.pop()
+            while not isLeftTurn(vertex1, vertex2, vertex):
+                vertex2 = vertex1
+                vertex1 = stack.pop()
+            stack.append(vertex1)
+            stack.append(vertex2)
+            stack.append(vertex)
+    return stack
+
+def grow_obstacles(robot_vertices):
+    global obstacles
     # rewrite the vertices for the objects
+    reflected_vertices = Set([])
+    for robot_vertex in robot_vertices:
+        reflected_vertices.add(flip_x_and_y(robot_vertex))
+    for obstacle in obstacles:
+        new_vertices = Set([])
+        for vertex in obstacle.vertices:
+            turtle = Turtle()
+            turtle.penup()
+            turtle.hideturtle()
+            turtle.color("black")
+            first_vertex = None
+            for reflected_vertex in reflected_vertices:
+                offset_vertex = add_vertices(vertex, reflected_vertex)
+                if not first_vertex:
+                    first_vertex = offset_vertex
+                turtle.setpos(offset_vertex[0], offset_vertex[1])
+                turtle.pendown()
+                new_vertices.add(offset_vertex)
+            turtle.setpos(first_vertex[0], first_vertex[1])
+            turtle.penup()                
+        obstacle.set_vertices(create_convex_hull(new_vertices))
 
 def visibility_graph( obstacles, start, end ):
     
@@ -31,13 +132,75 @@ def visibility_graph( obstacles, start, end ):
     # *make sure the intersection is inbetween the values of two vertices you're looking at
     # see code from last lab. getClosestDist()
     # plot
+    pass
 
 def dijkstras(obstacles):
     # use neighbors in each obstacle and perform dijkstras
+    pass
+
+def main():
+    global obstacles
+    create_objects("input_file.txt")
+    # Temp code for creating obstacles
+    obstacle = Obstacle()
+    obstacle.add_vertex((200,220))
+    obstacle.add_vertex((221.213203436,241.213203436))
+    obstacle.add_vertex((210.606601718,251.819805153))
+    obstacle.add_vertex((189.393398282,230.606601718))
+    obstacle2 = Obstacle()
+    obstacle2.add_vertex((130,180))
+    obstacle2.add_vertex((159.997181494,179.588779362))
+    obstacle2.add_vertex((145.35287801,194.640170509))
+    obstacle3 = Obstacle()
+    obstacle3.add_vertex((150,120))
+    obstacle3.add_vertex((194.995772241,119.383169043))
+    obstacle3.add_vertex((173.029317014,141.960255763))
+    obstacle4 = Obstacle()
+    obstacle4.add_vertex((230,170))
+    obstacle4.add_vertex((251.501987353,190.920433549))
+    obstacle4.add_vertex((230.503960307,191.208287996))
+    obstacles.extend([obstacle, obstacle2, obstacle3, obstacle4])
+    # Create turtle window
+    window = Screen()
+    # Draw the obstacles
+    red = Turtle()
+    red.speed(0)
+    red.hideturtle()
+    red.color("red")
+    red.penup()
+    for obstacle in obstacles:
+        first_vertex = None
+        for vertex in obstacle.vertices:
+            if not first_vertex:
+                first_vertex = vertex
+            red.setpos(vertex[0], vertex[1])
+            red.pendown()
+        red.setpos(first_vertex[0], first_vertex[1])
+        red.penup()
+    # Grow the obstacles
+    robot_size = sqrt(14**2 + 23**2)
+    robot_vertices = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
+    grow_obstacles(robot_vertices)
+    # Print the grown obstacles
+    green = Turtle()
+    green.speed(0)
+    green.hideturtle()
+    green.color("green")
+    green.penup()
+    for obstacle in obstacles:
+        first_vertex = None
+        for vertex in obstacle.vertices:
+
+            if not first_vertex:
+                first_vertex = vertex
+            green.setpos(vertex[0], vertex[1])
+            green.pendown()
+        green.setpos(first_vertex[0], first_vertex[1])
+        green.penup()
+    visibility_graph(obstacles, start, end)
+    dijkstras(obstacles)
+    window.exitonclick()
 
 if __name__ == "__main__":
-    create_objects("input_file.txt")
-    grow_obstacles(obstacles)
-    visibility_graph( obstacles, start, end)
-    dijkstras(obstacles)
+    main()
 
