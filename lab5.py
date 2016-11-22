@@ -118,20 +118,12 @@ def grow_obstacles(robot_vertices):
     for obstacle in obstacles:
         new_vertices = Set([])
         for vertex in obstacle.vertices:
-            turtle = Turtle()
-            turtle.penup()
-            turtle.hideturtle()
-            turtle.color("black")
             first_vertex = None
             for reflected_vertex in reflected_vertices:
                 offset_vertex = add_vertices(vertex, reflected_vertex)
                 if not first_vertex:
                     first_vertex = offset_vertex
-                turtle.setpos(offset_vertex[0], offset_vertex[1])
-                turtle.pendown()
-                new_vertices.add(offset_vertex)
-            turtle.setpos(first_vertex[0], first_vertex[1])
-            turtle.penup()                
+                new_vertices.add(offset_vertex)             
         obstacle.set_vertices(create_convex_hull(new_vertices))
 
 def line(vertex1, vertex2):
@@ -142,57 +134,6 @@ def line(vertex1, vertex2):
     slope = (vertex2[1]-vertex1[1]) / float( (vertex2[0]-vertex1[0]) )  # (y2-y1)/(x2-x1)
     intercept = vertex2[1] - (slope * vertex2[0])               # b = y2 - m * x2    
     return [slope, intercept, vertex1, vertex2]
-
-'''
-# attempted intersection function
-def intersect(obstacle, path):
-    # format : [ slope, y int, point, point ]
-
-    # undefined slope for one of the lines
-    if( obstacle[0] == "undefined" and path[0] != "undefined" ):
-        x_intersect = obstacle[2][0]
-        y_intersect = (path[0] * x_intersect) + path[1]
-
-        y_path_end1 = (path[0] * path[2][0]) + path[1]
-        y_path_end2 = (path[0] * path[3][0]) + path[1]
-
-        y_obstacle_end1 = obstacle[2][1]
-        y_obstacle_end2 = obstacle[3][1]
-
-    elif( path[0] == "undefined" and obstacle[0] != "undefined" ):
-        x_intersect = path[2][0]
-        y_intersect = (obstacle[0] * x_intersect) + obstacle[1]
-
-        y_path_end1 = path[2][1]
-        y_path_end2 = path[3][1]
-
-        y_obstacle_end1 = (obstacle[0] * obstacle[2][0]) + obstacle[1]
-        y_obstacle_end2 = (obstacle[0] * obstacle[3][0]) + obstacle[1]
-
-    # if lines parallel 
-    elif( (obstacle[0] == "undefined" and path[0] == "undefined") or (obstacle[0] - path[0] == 0) ):
-        return False
-
-    # normal case
-    else:
-        x_intersect = (path[1]-obstacle[1]) / float( (obstacle[0]-path[0]) )
-        y_intersect = (obstacle[0] * x_intersect) + obstacle[1]
-
-        y_path_end1 = (path[0] * path[2][0]) + path[1]
-        y_path_end2 = (path[0] * path[3][0]) + path[1]
-
-        y_obstacle_end1 = (obstacle[0] * obstacle[2][0]) + obstacle[1]
-        y_obstacle_end2 = (obstacle[0] * obstacle[3][0]) + obstacle[1]
-
-    # if the obstacle line segment actually crosses the path segment. NOT the intersection being on the path
-
-    if( (y_intersect < y_path_end1 and y_intersect > y_path_end2) or (y_intersect > y_path_end1 and y_intersect < y_path_end2) ):
-        if( (y_intersect < y_obstacle_end1 and y_intersect > y_obstacle_end2) or (y_intersect > y_obstacle_end1 and y_intersect < y_obstacle_end2) ):
-            print True
-            return True
-
-    return False
-'''
 
 def intersect(obstacle, path):
     if( (obstacle[0] == "undefined" and path[0] == "undefined") ):
@@ -332,7 +273,7 @@ def main():
 
     #Run Dijkstras Algorithm
     dijkstras(obstacles)
-    #window.exitonclick()
+    window.exitonclick()
 
 if __name__ == "__main__":
     main()
