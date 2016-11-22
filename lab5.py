@@ -17,9 +17,9 @@ def create_obstacles(input_file):
 class Obstacle:
     vertices = Set([])
     neighbors = [] # [ [vertex1, neighbor1], [vertex1, neighbor2], [vertex2, neighbor1] ]
-                     # where vertex1 and vertex2 are vertices in this object
+                     # where vertex1 and vertex2 are vertices in this obstacle
                      # and the neighbor1 and neighbor 2 are vertices in other objects
-                     # basically a hashmap that maps a vertex in an object to a valid neighbor
+                     # basically a hashmap that maps a vertex in this obstacle to a valid neighbor vertex in another obstacle
     
     def __init__(self):
        self.vertices =  []
@@ -144,7 +144,7 @@ def line(vertex1, vertex2):
     return [slope, intercept, vertex1, vertex2]
 
 '''
-attempted intersetion funciton
+# attempted intersection function
 def intersect(obstacle, path):
     # format : [ slope, y int, point, point ]
 
@@ -195,6 +195,8 @@ def intersect(obstacle, path):
 '''
 
 def intersect(obstacle, path):
+    if( (obstacle[0] == "undefined" and path[0] == "undefined") ):
+        return False
     return ccw(obstacle[2], path[2], path[3]) != ccw(obstacle[3],path[2],path[3]) and ccw(obstacle[2],obstacle[3],path[2]) != ccw(obstacle[2],obstacle[3],path[3])
 
 def ccw(A,B,C):
