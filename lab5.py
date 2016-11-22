@@ -266,8 +266,10 @@ def main():
     create_obstacles("input_file.txt")
 
     #Temp code for setting start and end
-    start =  ( 0, 0 )
-    end = ( 300, 300 )
+    start = Obstacle()
+    start.add_vertex((0,0))
+    end = Obstacle()
+    end.add_vertex((300, 300))
 
     # Temp code for creating obstacles
     obstacle = Obstacle()
@@ -326,6 +328,8 @@ def main():
             green.pendown()
         green.setpos(first_vertex[0], first_vertex[1])
         green.penup()
+
+    obstacles.extend([start,end])
    
     #Create the visibility graph
     visibility_graph(obstacles, start, end)
