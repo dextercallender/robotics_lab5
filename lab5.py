@@ -9,14 +9,17 @@ dimensions = ()
 obstacles = []
 lower_rightmost_vertex = None
 
-def create_objects(input_file):
-    # for each object in input file
-    obj = Obstacle() #list vertices for each object )  
-    return obj
+def create_obstacles(input_file):
+    # create the all the obstacle in the input file and fill them in the global obstacles []
+    # also set the global start and end points from the input file
+    pass 
 
 class Obstacle:
     vertices = Set([])
-    neighbors = [[]]
+    neighbors = [] # [ [vertex1, neighbor1], [vertex1, neighbor2], [vertex2, neighbor1] ]
+                     # where vertex1 and vertex2 are vertices in this object
+                     # and the neighbor1 and neighbor 2 are vertices in other objects
+                     # basically a hashmap that maps a vertex in an object to a valid neighbor
     
     def __init__(self):
        self.vertices =  []
@@ -26,6 +29,15 @@ class Obstacle:
     
     def set_vertices(self, param_vertices):
         self.vertices = param_vertices
+
+    def get_vertices(self):
+        return self.vertices
+
+    def add_neighbor(self, vertex_followedby_neighbors):
+        self.neighbors.append(vertex_followedby_neighbors)
+
+    def get_neighbors(self):
+        return self.neighbors
 
 def flip_x_and_y(location):
     return (-1*location[0], -1*location[1])
@@ -122,25 +134,152 @@ def grow_obstacles(robot_vertices):
             turtle.penup()                
         obstacle.set_vertices(create_convex_hull(new_vertices))
 
+def line(vertex1, vertex2):
+
+    if( (vertex2[0]-vertex1[0]) == 0 ):
+        return [ "undefined", "dne", vertex1, vertex2 ]
+
+    slope = (vertex2[1]-vertex1[1]) / float( (vertex2[0]-vertex1[0]) )  # (y2-y1)/(x2-x1)
+    intercept = vertex2[1] - (slope * vertex2[0])               # b = y2 - m * x2    
+    return [slope, intercept, vertex1, vertex2]
+
+def intersect(obstacle, path):
+    # format : [ slope, y int, point, point ]
+
+    # undefined slope for one of the lines
+    if( obstacle[0] == "undefined" and path[0] != "undefined" ):
+        x_intersect = obstacle[2][0]
+        y_intersect = (path[0] * x_intersect) + path[1]
+    elif( path[0] == "undefined" and obstacle[0] != "undefined" ):
+        x_intersect = path[2][0]
+        y_intersect = (obstacle[0] * x_intersect) + obstacle[1]
+    # if lines parallel 
+    elif( (obstacle[0] - path[0] == 0) or (obstacle[0] == "undefined" and path[0] == "undefined") ):
+        return False
+    # normal case
+    else:
+        x_intersect = (path[1]-obstacle[1]) / float( (obstacle[0]-path[0]) )
+        y_intersect = (obstacle[0] * x_intersect) + obstacle[1]
+
+    # draw lines and intersection
+    
+    red = Turtle()
+    red.speed(0)
+    red.hideturtle()
+    red.pensize(3)
+
+    #path
+    red.color("red")
+    red.penup()
+    red.setpos(path[2][0],path[2][1])
+    red.pendown()
+    red.setpos(path[3][0],path[3][1])
+    red.penup()
+
+
+    #obstacle
+    red.color("green")
+    red.setpos(obstacle[2][0],obstacle[2][1])
+    red.pendown()
+    red.setpos(obstacle[3][0],obstacle[3][1])
+    red.penup()
+
+    #intersection
+    red.setpos(x_intersect,y_intersect)
+    red.dot()
+
+    time.sleep(1)
+    red.clear()
+
+    # if intersection is inbetween x values of path
+    if( (x_intersect < path[2][0] and x_intersect > path[3][0]) or (x_intersect > path[2][0] and x_intersect < path[3][0]) ):
+        # if intersection is inbetween y values of path
+        if( (y_intersect < path[2][1] and y_intersect > path[3][1]) or (y_intersect > path[2][1] or y_intersect < path[3][1]) ):
+            print True
+            print path 
+            print obstacle
+            print " "
+            return True
+
+    return False
+
 def visibility_graph( obstacles, start, end ):
     
-    #check valid neighbors for each vertex in each obstacle
-    #do not check two vertex within the same shape
-    #check if line intersects OTHER objects
+    obstacle_lines = []
+
+    # get all lines in all objects
+    for i in range(0,len(obstacles)):
+        vertices = obstacles[i].get_vertices()
+        for j in range(0, len(vertices)):
+            obstacle_lines.append( line(vertices[j], vertices[(j+1)%len(vertices)]) )
+
+    # generate valid neighbors in each object by testing intersections with other object lines
+    for i in range(0,len(obstacles)):
+        vertices = obstacles[i].get_vertices()
+        for j in range(0,len(vertices)):
+            vertex = vertices[j]
+            for k in range(0,len(obstacles)):
+                if(k != i):
+                    other_obs_vertices = obstacles[k].get_vertices()
+                    for l in range(0, len(other_obs_vertices)):
+                        other_vertex = other_obs_vertices[l]
+                        possible_path = line( vertex, other_vertex )
+                        #does this possible path intersect one of the obstacle lines, inbetween its vertices
+                        does_intersect = False;
+                        for m in range(0, len(obstacle_lines)):
+                            #if they do not intersect, add the neighbor for that vertex
+                            obstacle_line = obstacle_lines[m]
+                            if( intersect( obstacle_line, possible_path) ):
+                                does_intersect = True;
+
+                        if( does_intersect == False ):
+                            print ( "bueno" )
+                            obstacles[i].add_neighbor( [ vertex, other_vertex ] )
+
+    # Plot all valid paths (ie neighbors in every obstacle object)
+    black = Turtle()
+    black.clear()
+    black.speed(0)
+    black.hideturtle()
+    black.color("black")
+    black.penup()
+    for i in range(0,len(obstacles)):
+        neighbors = obstacles[i].get_neighbors()
+        for j in range(0,len(neighbors)):
+            black.setpos(neighbors[j][0][0], neighbors[j][0][1])
+            black.pendown()
+            black.setpos(neighbors[j][1][0], neighbors[j][1][1])
+            black.penup() 
+     
+    time.sleep(10)     
+    # check valid neighbors for each vertex in each obstacle
+    # do not check two vertex within the same shape
+    # check if line intersects OTHER objects
     # for every line you draw, check if it intersects any line on any other object.
     # if not its valid
     # *make sure the intersection is inbetween the values of two vertices you're looking at
     # see code from last lab. getClosestDist()
     # plot
-    pass
 
 def dijkstras(obstacles):
     # use neighbors in each obstacle and perform dijkstras
+    # there are duplicate paths in each obstacle.
+    # consider making a global object paths and that contains all the neighbors in all obstacles with no duplicates
+    # before you run dijkstras
+
     pass
 
 def main():
     global obstacles
-    create_objects("input_file.txt")
+    global start
+    global end
+
+    create_obstacles("input_file.txt")
+
+    #Temp code for setting start and end
+    start =  ( 0, 0 )
+    end = ( 300, 300 )
+
     # Temp code for creating obstacles
     obstacle = Obstacle()
     obstacle.add_vertex((200,220))
@@ -160,6 +299,7 @@ def main():
     obstacle4.add_vertex((251.501987353,190.920433549))
     obstacle4.add_vertex((230.503960307,191.208287996))
     obstacles.extend([obstacle, obstacle2, obstacle3, obstacle4])
+    
     # Create turtle window
     window = Screen()
     # Draw the obstacles
@@ -197,9 +337,13 @@ def main():
             green.pendown()
         green.setpos(first_vertex[0], first_vertex[1])
         green.penup()
+   
+    #Create the visibility graph
     visibility_graph(obstacles, start, end)
+
+    #Run Dijkstras Algorithm
     dijkstras(obstacles)
-    window.exitonclick()
+    #window.exitonclick()
 
 if __name__ == "__main__":
     main()
