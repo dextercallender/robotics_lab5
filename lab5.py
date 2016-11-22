@@ -150,19 +150,40 @@ def intersect(obstacle, path):
     if( obstacle[0] == "undefined" and path[0] != "undefined" ):
         x_intersect = obstacle[2][0]
         y_intersect = (path[0] * x_intersect) + path[1]
+
+        y_path_end1 = (path[0] * path[2][0]) + path[1]
+        y_path_end2 = (path[0] * path[3][0]) + path[1]
+
+        y_obstacle_end1 = obstacle[2][1]
+        y_obstacle_end2 = obstacle[3][1]
+
     elif( path[0] == "undefined" and obstacle[0] != "undefined" ):
         x_intersect = path[2][0]
         y_intersect = (obstacle[0] * x_intersect) + obstacle[1]
+
+        y_path_end1 = path[2][1]
+        y_path_end2 = path[3][1]
+
+        y_obstacle_end1 = (obstacle[0] * obstacle[2][0]) + obstacle[1]
+        y_obstacle_end2 = (obstacle[0] * obstacle[3][0]) + obstacle[1]
+
     # if lines parallel 
-    elif( (obstacle[0] - path[0] == 0) or (obstacle[0] == "undefined" and path[0] == "undefined") ):
+    elif( (obstacle[0] == "undefined" and path[0] == "undefined") or (obstacle[0] - path[0] == 0) ):
         return False
+
     # normal case
     else:
         x_intersect = (path[1]-obstacle[1]) / float( (obstacle[0]-path[0]) )
         y_intersect = (obstacle[0] * x_intersect) + obstacle[1]
 
+        y_path_end1 = (path[0] * path[2][0]) + path[1]
+        y_path_end2 = (path[0] * path[3][0]) + path[1]
+
+        y_obstacle_end1 = (obstacle[0] * obstacle[2][0]) + obstacle[1]
+        y_obstacle_end2 = (obstacle[0] * obstacle[3][0]) + obstacle[1]
     # draw lines and intersection
     
+    '''
     red = Turtle()
     red.speed(0)
     red.hideturtle()
@@ -176,7 +197,6 @@ def intersect(obstacle, path):
     red.setpos(path[3][0],path[3][1])
     red.penup()
 
-
     #obstacle
     red.color("green")
     red.setpos(obstacle[2][0],obstacle[2][1])
@@ -187,18 +207,15 @@ def intersect(obstacle, path):
     #intersection
     red.setpos(x_intersect,y_intersect)
     red.dot()
-
-    time.sleep(1)
+    time.sleep(3)
     red.clear()
+    '''
 
-    # if intersection is inbetween x values of path
-    if( (x_intersect < path[2][0] and x_intersect > path[3][0]) or (x_intersect > path[2][0] and x_intersect < path[3][0]) ):
-        # if intersection is inbetween y values of path
-        if( (y_intersect < path[2][1] and y_intersect > path[3][1]) or (y_intersect > path[2][1] or y_intersect < path[3][1]) ):
+    # if the obstacle line segment actually crosses the path segment. NOT the intersection being on the path
+
+    if( (y_intersect < y_path_end1 and y_intersect > y_path_end2) or (y_intersect > y_path_end1 and y_intersect < y_path_end2) ):
+        if( (y_intersect < y_obstacle_end1 and y_intersect > y_obstacle_end2) or (y_intersect > y_obstacle_end1 and y_intersect < y_obstacle_end2) ):
             print True
-            print path 
-            print obstacle
-            print " "
             return True
 
     return False
@@ -213,6 +230,8 @@ def visibility_graph( obstacles, start, end ):
         for j in range(0, len(vertices)):
             obstacle_lines.append( line(vertices[j], vertices[(j+1)%len(vertices)]) )
 
+
+    
     # generate valid neighbors in each object by testing intersections with other object lines
     for i in range(0,len(obstacles)):
         vertices = obstacles[i].get_vertices()
@@ -220,20 +239,19 @@ def visibility_graph( obstacles, start, end ):
             vertex = vertices[j]
             for k in range(0,len(obstacles)):
                 if(k != i):
-                    other_obs_vertices = obstacles[k].get_vertices()
+                    obstacle = obstacles[k]
+                    other_obs_vertices = obstacle.get_vertices()
                     for l in range(0, len(other_obs_vertices)):
                         other_vertex = other_obs_vertices[l]
                         possible_path = line( vertex, other_vertex )
                         #does this possible path intersect one of the obstacle lines, inbetween its vertices
                         does_intersect = False;
                         for m in range(0, len(obstacle_lines)):
-                            #if they do not intersect, add the neighbor for that vertex
                             obstacle_line = obstacle_lines[m]
                             if( intersect( obstacle_line, possible_path) ):
                                 does_intersect = True;
 
                         if( does_intersect == False ):
-                            print ( "bueno" )
                             obstacles[i].add_neighbor( [ vertex, other_vertex ] )
 
     # Plot all valid paths (ie neighbors in every obstacle object)
@@ -241,7 +259,7 @@ def visibility_graph( obstacles, start, end ):
     black.clear()
     black.speed(0)
     black.hideturtle()
-    black.color("black")
+    black.color("orange")
     black.penup()
     for i in range(0,len(obstacles)):
         neighbors = obstacles[i].get_neighbors()
@@ -250,7 +268,8 @@ def visibility_graph( obstacles, start, end ):
             black.pendown()
             black.setpos(neighbors[j][1][0], neighbors[j][1][1])
             black.penup() 
-     
+            time.sleep(1)
+
     time.sleep(10)     
     # check valid neighbors for each vertex in each obstacle
     # do not check two vertex within the same shape
