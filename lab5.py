@@ -2,6 +2,7 @@ from turtle import *
 from math import *
 import time
 from sets import Set
+import sys
 
 start = ()
 end = ()
@@ -12,8 +13,25 @@ lower_rightmost_vertex = None
 def create_obstacles(input_file):
     # create the all the obstacle in the input file and fill them in the global obstacles []
     # also set the global start and end points from the input file
-    pass 
-
+    global start, end, obstacles, dimensions
+    with open(input_file) as f:
+        str_start = f.readline().strip().split()
+        start = Obstacle()
+        start.add_vertex((float(str_start[0]), float(str_start[1])))
+        str_end = f.readline().strip().split()
+        end = Obstacle()
+        end.add_vertex((float(str_end[0]), float(str_end[1])))
+        str_dim = f.readline().strip().split()
+        dimensions = (float(str_dim[0]), float(str_dim[1]))
+        num_obstacles = int(f.readline().strip())
+        for i in range(0, num_obstacles):
+            num_vertices = int(f.readline().strip())
+            obstacle = Obstacle()
+            for j in range(0, num_vertices):
+                str_vertex = f.readline().strip().split()
+                obstacle.add_vertex((float(str_vertex[0]),float(str_vertex[1])))
+            obstacles.append(obstacle)
+            
 class Obstacle:
     vertices = Set([])
     neighbors = [] # [ [vertex1, neighbor1], [vertex1, neighbor2], [vertex2, neighbor1] ]
@@ -204,36 +222,17 @@ def main():
     global start
     global end
 
-    create_obstacles("input_file.txt")
-
-    #Temp code for setting start and end
-    start = Obstacle()
-    start.add_vertex((0,0))
-    end = Obstacle()
-    end.add_vertex((300, 300))
-
-    # Temp code for creating obstacles
-    obstacle = Obstacle()
-    obstacle.add_vertex((200,220))
-    obstacle.add_vertex((221.213203436,241.213203436))
-    obstacle.add_vertex((210.606601718,251.819805153))
-    obstacle.add_vertex((189.393398282,230.606601718))
-    obstacle2 = Obstacle()
-    obstacle2.add_vertex((130,180))
-    obstacle2.add_vertex((159.997181494,179.588779362))
-    obstacle2.add_vertex((145.35287801,194.640170509))
-    obstacle3 = Obstacle()
-    obstacle3.add_vertex((150,120))
-    obstacle3.add_vertex((194.995772241,119.383169043))
-    obstacle3.add_vertex((173.029317014,141.960255763))
-    obstacle4 = Obstacle()
-    obstacle4.add_vertex((230,170))
-    obstacle4.add_vertex((251.501987353,190.920433549))
-    obstacle4.add_vertex((230.503960307,191.208287996))
-    obstacles.extend([obstacle, obstacle2, obstacle3, obstacle4])
+    if len(sys.argv) < 2:
+        print "Usage: lab5.py [map input file]"
+        return
+    
+    create_obstacles(sys.argv[1])
     
     # Create turtle window
     window = Screen()
+    window.reset()
+    window.setworldcoordinates(0, 0, max(dimensions) + 4, \
+                               max(dimensions) + 4)
     # Draw the obstacles
     red = Turtle()
     red.speed(0)
@@ -269,7 +268,6 @@ def main():
             green.pendown()
         green.setpos(first_vertex[0], first_vertex[1])
         green.penup()
-
     obstacles.extend([start,end])
    
     #Create the visibility graph
