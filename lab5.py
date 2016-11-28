@@ -3,6 +3,7 @@ from math import *
 import time
 from sets import Set
 import sys
+from matplotlib import path
 
 start = ()
 end = ()
@@ -139,9 +140,7 @@ def grow_obstacles(robot_vertices):
         for vertex in obstacle.vertices:
             for reflected_vertex in reflected_vertices:
                 offset_vertex = add_vertices(vertex, reflected_vertex)
-                if not (offset_vertex[0] < 0 or offset_vertex[0] > dimensions[0] \
-                   or offset_vertex[1] < 0 or offset_vertex[1] > dimensions[1]):
-                    new_vertices.add(offset_vertex)             
+                new_vertices.add(offset_vertex)             
         obstacle.set_vertices(create_convex_hull(new_vertices))
 
 def line(vertex1, vertex2):
@@ -164,33 +163,39 @@ def ccw(A,B,C):
 def visibility_graph( obstacles, start, end ):
     
     obstacle_lines = []
-
+    path_obstacles = []
     # get all lines in all objects
     for i in range(0,len(obstacles)):
         vertices = obstacles[i].get_vertices()
         for j in range(0, len(vertices)):
             obstacle_lines.append( line(vertices[j], vertices[(j+1)%len(vertices)]) )
-
+        path_obstacles.append(path.Path(vertices))
     # generate valid neighbors in each object by testing intersections with other object lines
     for i in range(0,len(obstacles)):
         vertices = obstacles[i].get_vertices()
         for j in range(0,len(vertices)):
             vertex = vertices[j]
-            for k in range(0,len(obstacles)):
-                if(k != i):
-                    obstacle = obstacles[k]
-                    other_obs_vertices = obstacle.get_vertices()
-                    for l in range(0, len(other_obs_vertices)):
-                        other_vertex = other_obs_vertices[l]
-                        possible_path = line( vertex, other_vertex )
-                        #does this possible path intersect one of the obstacle lines
-                        does_intersect = False;
-                        for m in range(0, len(obstacle_lines)):
-                            obstacle_line = obstacle_lines[m]
-                            if( intersect( obstacle_line, possible_path) ):
-                                does_intersect = True;
-                        if( does_intersect == False ):
-                            obstacles[i].add_neighbor( [ vertex, other_vertex ] )
+            skip = False
+            for l in range(0, len(path_obstacles)):
+                if l != i and path_obstacles[l].contains_points([vertex]):
+                    skip = True
+            if not skip:
+                for k in range(0,len(obstacles)):
+                    if(k != i):
+                        obstacle = obstacles[k]
+                        other_obs_vertices = obstacle.get_vertices()
+                        for l in range(0, len(other_obs_vertices)):
+                            other_vertex = other_obs_vertices[l]
+                            possible_path = line( vertex, other_vertex )
+                            #does this possible path intersect one of the obstacle lines
+                            does_intersect = False;
+                            for m in range(0, len(obstacle_lines)):
+                                obstacle_line = obstacle_lines[m]
+                                if( intersect( obstacle_line, possible_path) ):
+                                    does_intersect = True;
+                            if( does_intersect == False ):
+                                obstacles[i].add_neighbor( [ vertex, other_vertex ] )
+                
 
     # Plot all valid paths (ie neighbors in every obstacle object)
     orange = Turtle()
