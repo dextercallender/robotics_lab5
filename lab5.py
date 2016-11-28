@@ -129,7 +129,7 @@ def create_convex_hull(vertices):
     return stack
 
 def grow_obstacles(robot_vertices):
-    global obstacles
+    global obstacles, dimensions
     # rewrite the vertices for the objects
     reflected_vertices = Set([])
     for robot_vertex in robot_vertices:
@@ -137,12 +137,11 @@ def grow_obstacles(robot_vertices):
     for obstacle in obstacles:
         new_vertices = Set([])
         for vertex in obstacle.vertices:
-            first_vertex = None
             for reflected_vertex in reflected_vertices:
                 offset_vertex = add_vertices(vertex, reflected_vertex)
-                if not first_vertex:
-                    first_vertex = offset_vertex
-                new_vertices.add(offset_vertex)             
+                if not (offset_vertex[0] < 0 or offset_vertex[0] > dimensions[0] \
+                   or offset_vertex[1] < 0 or offset_vertex[1] > dimensions[1]):
+                    new_vertices.add(offset_vertex)             
         obstacle.set_vertices(create_convex_hull(new_vertices))
 
 def line(vertex1, vertex2):
@@ -233,6 +232,8 @@ def get_angles_and_dist(to_visit):
         else:
             y_diff = vertex2[1] - vertex1[1]
             angle = acos(y_diff/dist)
+            if len(result) > 0:
+                angle = angle - result[len(result)-1][0]
             result.append((angle, dist))
     return result
             
