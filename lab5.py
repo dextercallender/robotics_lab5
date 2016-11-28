@@ -3,12 +3,14 @@ from math import *
 import time
 from sets import Set
 import sys
+#from gopigo import *
 
 start = ()
 end = ()
 dimensions = ()
 obstacles = []
 lower_rightmost_vertex = None
+bounds = []
 
 def create_obstacles(input_file):
     # create the all the obstacle in the input file and fill them in the global obstacles []
@@ -31,7 +33,9 @@ def create_obstacles(input_file):
                 str_vertex = f.readline().strip().split()
                 obstacle.add_vertex((float(str_vertex[0]),float(str_vertex[1])))
             obstacles.append(obstacle)
-            
+        bounds.extend([ [(0,0), (0,dimensions[0])], [(0,0), (0,dimensions[1])], ])
+        bounds.extend([ [(dimensions[0],0), (dimensions[0],dimensions[1])], [(0,dimensions[1]), (dimensions[0],dimensions[1])] ])
+
 class Obstacle:
     vertices = Set([])
     neighbors = [] # [ [vertex1, neighbor1], [vertex1, neighbor2], [vertex2, neighbor1] ]
@@ -190,6 +194,12 @@ def visibility_graph( obstacles, start, end ):
                             obstacle_line = obstacle_lines[m]
                             if( intersect( obstacle_line, possible_path) ):
                                 does_intersect = True;
+                                
+                        for m in range(0,len(bounds)):
+                            boundary_line = line(bounds[m][0], bounds[m][1])
+                            if( intersect(boundary_line, possible_path) ):
+                                does_intersect = True;
+
                         if( does_intersect == False ):
                             obstacles[i].add_neighbor( [ vertex, other_vertex ] )
 
@@ -218,10 +228,47 @@ def dijkstras(obstacles):
 
     pass
 
+def turn(angle):
+    # angle in radians
+    #$ 5.625 degrees per encoder pulse
+    revolutions = math.degrees(radians) / float(5.625)
+
+    enable_encoders()
+    # positive angle to turn left
+    if(angle > 0):
+        enc_tgt(0,1,revolutions)
+        left()
+        while(read_enc_status() == 1):
+            left()
+    # negative angle to turn right
+    if(angle < 0):
+        enc_tgt(1,0,revolutions)
+        right()
+        while(read_enc_status() == 1):
+            left()
+    stop()
+    disable_encoders()
+
+def forward(distance):
+    #wheel moves 20.4 cm in one full revolution
+    revolutions = float(distance) / 20.4
+    enable_encoders()
+    enc_tgt(1,1,revolutions)
+    while(read_enc_status() == 1 ):
+        fwd()
+    stop()
+    disable_encoders()
+
+def move(tupe_angle_distance):
+    turn(tupe_angle_distance[0])
+    forward(tupe_angle_distance[1])
+
+
 def main():
     global obstacles
     global start
     global end
+    global bounds
 
     if len(sys.argv) < 2:
         print "Usage: lab5.py [map input file]"
