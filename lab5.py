@@ -3,12 +3,15 @@ from math import *
 import time
 from sets import Set
 import sys
+#from gopigo import *
+from matplotlib import path
 
 start = ()
 end = ()
 dimensions = ()
 obstacles = []
 lower_rightmost_vertex = None
+bounds = []
 
 def create_obstacles(input_file):
     # create the all the obstacle in the input file and fill them in the global obstacles []
@@ -31,7 +34,9 @@ def create_obstacles(input_file):
                 str_vertex = f.readline().strip().split()
                 obstacle.add_vertex((float(str_vertex[0]),float(str_vertex[1])))
             obstacles.append(obstacle)
-            
+        bounds.extend([ [(0,0), (0,dimensions[0])], [(0,0), (0,dimensions[1])], ])
+        bounds.extend([ [(dimensions[0],0), (dimensions[0],dimensions[1])], [(0,dimensions[1]), (dimensions[0],dimensions[1])] ])
+
 class Obstacle:
     vertices = Set([])
     neighbors = [] # [ [vertex1, neighbor1], [vertex1, neighbor2], [vertex2, neighbor1] ]
@@ -129,7 +134,7 @@ def create_convex_hull(vertices):
     return stack
 
 def grow_obstacles(robot_vertices):
-    global obstacles
+    global obstacles, dimensions
     # rewrite the vertices for the objects
     reflected_vertices = Set([])
     for robot_vertex in robot_vertices:
@@ -137,11 +142,8 @@ def grow_obstacles(robot_vertices):
     for obstacle in obstacles:
         new_vertices = Set([])
         for vertex in obstacle.vertices:
-            first_vertex = None
             for reflected_vertex in reflected_vertices:
                 offset_vertex = add_vertices(vertex, reflected_vertex)
-                if not first_vertex:
-                    first_vertex = offset_vertex
                 new_vertices.add(offset_vertex)             
         obstacle.set_vertices(create_convex_hull(new_vertices))
 
@@ -165,13 +167,13 @@ def ccw(A,B,C):
 def visibility_graph( obstacles, start, end ):
     
     obstacle_lines = []
-
+    path_obstacles = []
     # get all lines in all objects
     for i in range(0,len(obstacles)):
         vertices = obstacles[i].get_vertices()
         for j in range(0, len(vertices)):
             obstacle_lines.append( line(vertices[j], vertices[(j+1)%len(vertices)]) )
-
+        path_obstacles.append(path.Path(vertices))
     # generate valid neighbors in each object by testing intersections with other object lines
     for i in range(0,len(obstacles)):
         vertices = obstacles[i].get_vertices()
@@ -190,8 +192,36 @@ def visibility_graph( obstacles, start, end ):
                             obstacle_line = obstacle_lines[m]
                             if( intersect( obstacle_line, possible_path) ):
                                 does_intersect = True;
+                                
+                        for m in range(0,len(bounds)):
+                            boundary_line = line(bounds[m][0], bounds[m][1])
+                            if( intersect(boundary_line, possible_path) ):
+                                does_intersect = True;
+
                         if( does_intersect == False ):
                             obstacles[i].add_neighbor( [ vertex, other_vertex ] )
+
+            skip = False
+            for l in range(0, len(path_obstacles)):
+                if l != i and path_obstacles[l].contains_points([vertex]):
+                    skip = True
+            if not skip:
+                for k in range(0,len(obstacles)):
+                    if(k != i):
+                        obstacle = obstacles[k]
+                        other_obs_vertices = obstacle.get_vertices()
+                        for l in range(0, len(other_obs_vertices)):
+                            other_vertex = other_obs_vertices[l]
+                            possible_path = line( vertex, other_vertex )
+                            #does this possible path intersect one of the obstacle lines
+                            does_intersect = False;
+                            for m in range(0, len(obstacle_lines)):
+                                obstacle_line = obstacle_lines[m]
+                                if( intersect( obstacle_line, possible_path) ):
+                                    does_intersect = True;
+                            if( does_intersect == False ):
+                                obstacles[i].add_neighbor( [ vertex, other_vertex ] )
+                
 
     # Plot all valid paths (ie neighbors in every obstacle object)
     orange = Turtle()
@@ -263,10 +293,68 @@ def dijkstra(graph,src,dest,visited=[],distances={},predecessors={}):
 #        dijkstra(graph,x,dest,visited,distances,predecessors)
 
 
+def turn(angle):
+    # angle in radians
+    #$ 5.625 degrees per encoder pulse
+    revolutions = math.degrees(radians) / float(5.625)
+
+    enable_encoders()
+    # positive angle to turn left
+    if(angle > 0):
+        enc_tgt(0,1,revolutions)
+        left()
+        while(read_enc_status() == 1):
+            left()
+    # negative angle to turn right
+    if(angle < 0):
+        enc_tgt(1,0,revolutions)
+        right()
+        while(read_enc_status() == 1):
+            left()
+    stop()
+    disable_encoders()
+
+def forward(distance):
+    #wheel moves 20.4 cm in one full revolution
+    revolutions = float(distance) / 20.4
+    enable_encoders()
+    enc_tgt(1,1,revolutions)
+    while(read_enc_status() == 1 ):
+        fwd()
+    stop()
+    disable_encoders()
+
+def move(tupe_angle_distance):
+    turn(tupe_angle_distance[0])
+    forward(tupe_angle_distance[1])
+
+
+def get_angles_and_dist(to_visit):
+    '''
+        Get angles and distances between vertices to visit
+        Returns [(angle1, distance1), (angle2, distance2),...]
+    '''
+    result = []
+    for i in range(0, len(to_visit) - 1):
+        vertex1 = to_visit[i]
+        vertex2 = to_visit[i+1]
+        dist = sqrt((vertex2[0] - vertex1[0])**2 + (vertex2[1] - vertex1[1])**2)
+        if dist == 0:
+            result.append((0,0))
+        else:
+            y_diff = vertex2[1] - vertex1[1]
+            angle = acos(y_diff/dist)
+            if len(result) > 0:
+                angle = angle - result[len(result)-1][0]
+            result.append((angle, dist))
+    return result
+            
+
 def main():
     global obstacles
     global start
     global end
+    global bounds
 
     if len(sys.argv) < 2:
         print "Usage: lab5.py [map input file]"
