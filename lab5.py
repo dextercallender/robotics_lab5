@@ -208,15 +208,60 @@ def visibility_graph( obstacles, start, end ):
             orange.setpos(neighbors[j][1][0], neighbors[j][1][1])
             orange.penup() 
 
-    time.sleep(10)
-
-def dijkstras(obstacles):
+def create_graph(obstacles):
     # use neighbors in each obstacle and perform dijkstras
     # there are duplicate paths in each obstacle.
     # consider making a global object paths and that contains all the neighbors in all obstacles with no duplicates
     # before you run dijkstras
+    graph = {}
+    for obstacle in obstacles:
+        #paths = {}
+        for i in range(len(obstacles.neighbors)):
+            if obstacle.neighbors[i][0] not in graph:
+                graph[obstacle.neighbors[i][0]] = {}
+            dist = sqrt((obstacle.neighbors[i][0][0] - obstacle.neighbors[i][1][0]) ** 2 + \
+                    (obstacle.neighbors[i][0][1] - obstacle.neighbors[i][1][1]) ** 2)
+            graph[obstacle.neighbors[i][0]][obstacle.neighbors[i][1]] = dist
+    return graph
 
-    pass
+def dijkstra(graph,src,dest,visited=[],distances={},predecessors={}):
+    # error checks
+    if src not in graph:
+        raise TypeError('start point does not exist')
+    if dest not in graph:
+        raise TypeError('end point does not exist')    
+    # if start point == end point
+    if src == dest:
+        # display None
+        path=[]
+        pred=dest
+        while pred != None:
+            path.append(pred)
+            pred=predecessors.get(pred,None)
+        print('shortest path: '+str(path)+" cost="+str(distances[dest])) 
+    else :
+        # if it is the initial  run, initializes the cost
+        if not visited: 
+            distances[src]=0
+        # visit the neighbors
+        for neighbor in graph[src] :
+            if neighbor not in visited:
+                new_distance = distances[src] + graph[src][neighbor]
+                if new_distance < distances.get(neighbor,float('inf')):
+                    distances[neighbor] = new_distance
+                    predecessors[neighbor] = src
+        # mark as visited
+        visited.append(src)
+        # now that all neighbors have been visited: recurse                         
+        # select the non visited node with lowest distance 'x'
+        # run Dijskstra with src='x'
+        unvisited={}
+        for k in graph:
+            if k not in visited:
+                unvisited[k] = distances.get(k,float('inf'))        
+        x=min(unvisited, key=unvisited.get)
+#        dijkstra(graph,x,dest,visited,distances,predecessors)
+
 
 def main():
     global obstacles
@@ -274,10 +319,12 @@ def main():
     #Create the visibility graph
     visibility_graph(obstacles, start, end)
 
-    #Run Dijkstras Algorithm
-    dijkstras(obstacles)
-    window.exitonclick()
+   #dijkstraa(obstacles)
+    #window.exitonclick()
 
+    #Run Dijkstras Algorithm
+    print create_graph(obstacles)
+ 
 if __name__ == "__main__":
     main()
 
