@@ -218,6 +218,24 @@ def dijkstras(obstacles):
 
     pass
 
+def get_angles_and_dist(to_visit):
+    '''
+        Get angles and distances between vertices to visit
+        Returns [(angle1, distance1), (angle2, distance2),...]
+    '''
+    result = []
+    for i in range(0, len(to_visit) - 1):
+        vertex1 = to_visit[i]
+        vertex2 = to_visit[i+1]
+        dist = sqrt((vertex2[0] - vertex1[0])**2 + (vertex2[1] - vertex1[1])**2)
+        if dist == 0:
+            result.append((0,0))
+        else:
+            y_diff = vertex2[1] - vertex1[1]
+            angle = acos(y_diff/dist)
+            result.append((angle, dist))
+    return result
+            
 def main():
     global obstacles
     global start
