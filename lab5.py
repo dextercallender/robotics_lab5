@@ -112,7 +112,7 @@ def create_convex_hull(vertices):
         vertices = list(vertices)
         vertices.sort(cmp=angle_comparison)
         # Add in the first and last points
-        stack.append(vertices.pop())
+        stack.append(vertices[len(vertices)-1])
         stack.append(lower_rightmost_vertex)
         # Loop through the vertices and add the ones that
         # will make a left turn
@@ -124,7 +124,8 @@ def create_convex_hull(vertices):
                 vertex1 = stack.pop()
             stack.append(vertex1)
             stack.append(vertex2)
-            stack.append(vertex)
+            if not vertex in stack:
+                stack.append(vertex)
     return stack
 
 def grow_obstacles(robot_vertices):
