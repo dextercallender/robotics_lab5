@@ -1,5 +1,7 @@
 from gopigo import *
 
+global path = []
+
 def turn(angle):
     # angle in radians
     #$ 5.625 degrees per encoder pulse
@@ -55,3 +57,26 @@ def get_angles_and_dist(to_visit):
                 angle = angle - result[len(result)-1][0]
             result.append((angle, dist))
     return result
+
+class Point:
+    x = 0
+    y = 0
+    
+    def __init__(self, _x, _y):
+       self.vertices =  []
+       self.x = _x
+       self.y = _y
+    
+def make_path(input_file):
+    global path
+    with open(input_file) as f:
+        number_of_points = f.readline().strip().split(",")
+        for i in range(0, float(number_of_points[0]) ):
+            point = f.readline().strip().split()
+            path.append( new Point(int(point[0]), int(point[1])) )    
+        
+def main():    
+    make_path("optimal_path.txt")
+    
+if __name__ == "__main__":
+    main()
