@@ -1,11 +1,13 @@
-from gopigo import *
+#from gopigo import *
+from math import *
+import math
 
-global path = []
+path = []
 
 def turn(angle):
     # angle in radians
     #$ 5.625 degrees per encoder pulse
-    revolutions = math.degrees(radians) / float(5.625)
+    revolutions = math.degrees(angle) / float(5.625)
 
     enable_encoders()
     # positive angle to turn left
@@ -47,11 +49,11 @@ def get_angles_and_dist(to_visit):
     for i in range(0, len(to_visit) - 1):
         vertex1 = to_visit[i]
         vertex2 = to_visit[i+1]
-        dist = sqrt((vertex2[0] - vertex1[0])**2 + (vertex2[1] - vertex1[1])**2)
+        dist = sqrt((vertex2.x - vertex1.x)**2 + (vertex2.y - vertex1.y)**2)
         if dist == 0:
             result.append((0,0))
         else:
-            y_diff = vertex2[1] - vertex1[1]
+            y_diff = vertex2.y - vertex1.y
             angle = acos(y_diff/dist)
             if len(result) > 0:
                 angle = angle - result[len(result)-1][0]
@@ -59,8 +61,8 @@ def get_angles_and_dist(to_visit):
     return result
 
 class Point:
-    x = 0
-    y = 0
+    x = 0.0
+    y = 0.0
     
     def __init__(self, _x, _y):
        self.vertices =  []
@@ -70,13 +72,18 @@ class Point:
 def make_path(input_file):
     global path
     with open(input_file) as f:
-        number_of_points = f.readline().strip().split(",")
-        for i in range(0, float(number_of_points[0]) ):
-            point = f.readline().strip().split()
-            path.append( new Point(int(point[0]), int(point[1])) )    
+        number_of_points = int( f.readline().strip().split()[0] )
+        for i in range(0, number_of_points ):
+            point = f.readline().strip().split(",")
+            path.append( Point( float(point[0]), float(point[1])) )    
         
-def main():    
+def main():
+    global path    
     make_path("optimal_path.txt")
+
+    result = get_angles_and_dist(path)
+    for i in range(0, len(result)):
+        move(result[i])
     
 if __name__ == "__main__":
     main()
