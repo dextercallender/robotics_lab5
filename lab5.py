@@ -295,28 +295,28 @@ def dijkstra(graph,src,dest,visited=[],distances={},predecessors={}):
 
 def turn(angle):
     # angle in radians
-    #$ 5.625 degrees per encoder pulse
-    revolutions = math.degrees(radians) / float(5.625)
+    # 11.25 degrees per encoder pulse
+    revolutions = math.degrees(radians) / float(11.25)
 
     enable_encoders()
     # positive angle to turn left
     if(angle > 0):
         enc_tgt(0,1,revolutions)
-        left()
+        left_rot()
         while(read_enc_status() == 1):
-            left()
+            left_rot()
     # negative angle to turn right
     if(angle < 0):
         enc_tgt(1,0,revolutions)
-        right()
+        right_rot()
         while(read_enc_status() == 1):
-            left()
+            right_rot()
     stop()
     disable_encoders()
 
 def forward(distance):
     #wheel moves 20.4 cm in one full revolution
-    revolutions = float(distance) / 20.4
+    revolutions = float(distance) / 20.4 * 18
     enable_encoders()
     enc_tgt(1,1,revolutions)
     while(read_enc_status() == 1 ):
