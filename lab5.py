@@ -372,9 +372,13 @@ def dijkstra():
 
 def write_to_file(path):
     ''' Write the given path to 'output.txt' '''
+    first_vertex = None
+    if len(path) > 1:
+        first_vertex = path[0]
     with open('output.txt', 'w') as f:
+        f.write(str(len(path)) + "\n")
         for vertex in path:
-            f.write(str(vertex[0]) + " " + str(vertex[1]) + "\n")
+            f.write(str(vertex[0] - first_vertex[0]) + " " + str(vertex[1] - first_vertex[1]) + "\n")
 
 def main():
     global obstacles, start, end, orange
