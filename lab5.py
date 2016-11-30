@@ -3,7 +3,9 @@ from math import *
 import time
 from sets import Set
 import sys
+#from gopigo import *
 from matplotlib import path
+import copy
 
 start = ()
 end = ()
@@ -37,6 +39,7 @@ def create_obstacles(input_file):
             for j in range(0, num_vertices):
                 str_vertex = f.readline().strip().split()
                 obstacle.vertices.append((float(str_vertex[0]),float(str_vertex[1])))
+            obstacle.original_vertices = copy.deepcopy(obstacle.vertices)
             obstacles.append(obstacle)
 
 class Obstacle:
@@ -46,6 +49,7 @@ class Obstacle:
             Initialize an obstacle
         '''
         self.vertices =  []
+        self.original_vertices = []
 
     def set_vertices(self, new_vertices):
         ''' Set the verticles of the obstacle '''
@@ -242,15 +246,11 @@ def inside_obstacle(vertex, path_obstacles, index):
     
 def visibility_graph():
     ''' Draw the visibility graph '''
-    global vertices
+    global vertices, orange
+    vertices = {}
     # Initialize variables
     path_obstacles = construct_path_obstacles()
     line_segs = []
-    orange = Turtle()
-    orange.speed(0)
-    orange.hideturtle()
-    orange.color("orange")
-    orange.penup()
     # Create a list of the line segments of the objects
     # and a dictionary of valid vertices
     for j in range(0, len(obstacles)):
@@ -315,7 +315,7 @@ def visibility_graph():
                 orange.setpos(vertex1[0], vertex1[1])
                 orange.pendown()
                 orange.setpos(vertex2[0], vertex2[1])
-                orange.penup()                                                           
+                orange.penup()
             
 def dijkstra():
     ''' Run dijkstras '''
@@ -347,6 +347,10 @@ def dijkstra():
     # Get the path by going through the predecessors
     path = []
     dist_to_start = vertices[end.vertices[0]].dist
+    # End not reachable
+    if dist_to_start == float('inf'):
+        print "No Path Found"
+        return []
     print "Total Distance To Goal: ", dist_to_start
     to_append = vertices[end.vertices[0]]
     while dist_to_start > 0:
@@ -373,7 +377,7 @@ def write_to_file(path):
             f.write(str(vertex[0]) + " " + str(vertex[1]) + "\n")
 
 def main():
-    global obstacles, start, end
+    global obstacles, start, end, orange
 
     # Check parameters
     if len(sys.argv) < 2:
@@ -410,33 +414,66 @@ def main():
     red.setpos(dimensions[0], dimensions[1])
     red.setpos(0, dimensions[1])
     red.setpos(0,0)
-    
-    # Grow the obstacles
-    robot_size = sqrt(14**2 + 23**2)
-    robot_vertices = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
-    grow_obstacles(robot_vertices)
-    
-    # Draw the grown obstacles
-    green = Turtle()
-    green.speed(0)
-    green.hideturtle()
-    green.color("green")
-    green.penup()
-    for obstacle in obstacles:
-        first_vertex = None
-        for vertex in obstacle.vertices:
 
-            if not first_vertex:
-                first_vertex = vertex
-            green.setpos(vertex[0], vertex[1])
-            green.pendown()
-        green.setpos(first_vertex[0], first_vertex[1])
-        green.penup()
-    obstacles.extend([start,end])
-   
-    #Create the visibility graph
-    visibility_graph()
+    orange = Turtle()
+    orange.speed(0)
+    orange.hideturtle()
+    orange.color("orange")
+    orange.penup()
     
+    # Choosing different vertices as reference vertex
+    robot_size = sqrt(14**2 + 23**2)
+    robot_vertices1 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
+    robot_vertices2 = [(0,0), (1 * robot_size, 0), (1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
+    robot_vertices3 = [(0,0), (1 * robot_size, 0), (1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
+    robot_vertices4 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
+    all_robot_vertices = [robot_vertices1, robot_vertices2, robot_vertices3, robot_vertices4]
+    repeat = True
+    repeat_index = 0
+    # Try each of the reference vertices
+    # in case one covers the goal/start
+    while repeat:
+        grow_obstacles(all_robot_vertices[repeat_index])
+        
+        # Draw the grown obstacles
+        green = Turtle()
+        green.speed(0)
+        green.hideturtle()
+        green.color("green")
+        green.penup()
+        for obstacle in obstacles:
+            first_vertex = None
+            for vertex in obstacle.vertices:
+
+                if not first_vertex:
+                    first_vertex = vertex
+                green.setpos(vertex[0], vertex[1])
+                green.pendown()
+            green.setpos(first_vertex[0], first_vertex[1])
+            green.penup()
+        obstacles.extend([start,end])
+       
+        #Create the visibility graph
+        visibility_graph()
+
+        # Start or end was not covered by an obstacle, so no need to
+        # try the next reference point on the robot
+        if start.vertices[0] in vertices and end.vertices[0] in vertices:
+            repeat = False
+        # Start or end was obstructed by a grown obstacle
+        # Reset everything for the next reference point
+        else:
+            obstacles.remove(start)
+            obstacles.remove(end)
+            for obstacle in obstacles:
+                obstacle.vertices = copy.deepcopy(obstacle.original_vertices)
+            green.clear()
+            orange.clear()
+        repeat_index += 1
+        # Tried all reference points and didn't work
+        if repeat_index > 3:
+            print "No path found"
+            return
     #Run Dijkstras Algorithm
     path = dijkstra()
 
