@@ -155,7 +155,7 @@ def grow_obstacles(robot_vertices):
         obstacle.set_vertices(create_convex_hull(new_vertices))
 
 class Vertex:
-    def __init__(self, param_x, param_y, param_obstacle_num):
+    def __init__(self, param_x, param_y, param_obstacle_num, param_vertex_num):
         ''' Initialize a vertex '''
         self.predecessor = None
         self.neighbors = []
@@ -163,6 +163,7 @@ class Vertex:
         self.x = param_x
         self.y = param_y
         self.obstacle_num = param_obstacle_num
+        self.vertex_num = param_vertex_num
 
     def distance_to_neighbor(self, neighbor):
         ''' Distance between this vertex and the given neighbor '''
@@ -265,18 +266,7 @@ def visibility_graph():
             # not inside an object, or the world bounds
             if not obstacle.vertices[i] in vertices and not inside_obstacle(obstacle.vertices[i], path_obstacles, j) \
                and inside_world_bounds(obstacle.vertices[i]):
-                vertices[obstacle.vertices[i]] = Vertex(obstacle.vertices[i][0], obstacle.vertices[i][1], j)
-    # Attach each vertex to the ones before/after it in the obstacle
-    for i in range(0, len(obstacles)):
-        obstacle = obstacles[i]
-        for j in range(0, len(obstacle.vertices)):
-            if obstacle.vertices[j] in vertices:
-                previous_index = (j - 1) % len(obstacle.vertices)
-                next_index = (j + 1) % len(obstacle.vertices)
-                if not previous_index == j and obstacle.vertices[previous_index] in vertices:
-                    vertices[obstacle.vertices[j]].neighbors.append(vertices[obstacle.vertices[previous_index]])
-                if not previous_index == next_index and not next_index == j and obstacle.vertices[next_index] in vertices:
-                    vertices[obstacle.vertices[j]].neighbors.append(vertices[obstacle.vertices[next_index]])
+                vertices[obstacle.vertices[i]] = Vertex(obstacle.vertices[i][0], obstacle.vertices[i][1], j, i)
     # For each vertex check all other vertices to see if they're visible
     for i in range(0, len(vertices.keys())):
         vertex1 = vertices.keys()[i]
@@ -284,9 +274,11 @@ def visibility_graph():
             vertex2 = vertices.keys()[j]
             line_seg = Line_Segment(vertex1[0], vertex1[1], vertex2[0], vertex2[1])
             valid = True
-            # Make sure it's not the same obstacle
+            # If it's the same obstacle, make sure its vertices that are adj to each other
             if vertices[vertex1].obstacle_num == vertices[vertex2].obstacle_num:
-                valid = False
+                if not((vertices[vertex1].vertex_num + 1) % len(obstacles[vertices[vertex1].obstacle_num].vertices) == vertices[vertex2].vertex_num or \
+                    (vertices[vertex1].vertex_num - 1) % len(obstacles[vertices[vertex1].obstacle_num].vertices) == vertices[vertex2].vertex_num):
+                    valid = False
             if valid:
                 # Check if the line between the vertices intersects
                 # the lines of any obstacle
@@ -385,7 +377,7 @@ def main():
 
     # Check parameters
     if len(sys.argv) < 2:
-        print "Usage: lab5.py [map input file]"
+        print "Usage: lab5_part1.py [map input file]"
         return
 
     # Create obstacles from input fo;e
@@ -418,7 +410,17 @@ def main():
     red.setpos(dimensions[0], dimensions[1])
     red.setpos(0, dimensions[1])
     red.setpos(0,0)
+    red.penup()
+    # Draw start/end points
+    red.setpos(start.vertices[0][0], start.vertices[0][1])
+    red.pendown()
+    red.circle(2)
+    red.penup()
+    red.setpos(end.vertices[0][0], end.vertices[0][1])
+    red.pendown()
+    red.circle(2)
 
+    # Turtle for visibility graph
     orange = Turtle()
     orange.speed(0)
     orange.hideturtle()
@@ -427,10 +429,10 @@ def main():
     
     # Choosing different vertices as reference vertex
     robot_size = sqrt(14**2 + 23**2)
-    robot_vertices1 = [(0,0), (1 * robot_size, 0), (1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
-    robot_vertices2 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
-    robot_vertices3 = [(0,0), (1 * robot_size, 0), (1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
-    robot_vertices4 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
+    robot_vertices1 = [(0,0), (1 * robot_size, 0), (1 * robot_size, 1 * robot_size), (0, 1 * robot_size)] # bottom left
+    robot_vertices2 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)] # top right
+    robot_vertices3 = [(0,0), (1 * robot_size, 0), (1 * robot_size, -1 * robot_size), (0, -1 * robot_size)] # top left
+    robot_vertices4 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, 1 * robot_size), (0, 1 * robot_size)] # bottom right
     all_robot_vertices = [robot_vertices1, robot_vertices2, robot_vertices3, robot_vertices4]
     repeat = True
     repeat_index = 0
