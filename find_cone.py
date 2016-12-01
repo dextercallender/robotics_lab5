@@ -10,8 +10,10 @@ except ImportError:
 import atexit
 atexit.register(stop)
 
-mean = [178.0, 198.0, 249.0]
-stddev = [0.0, 3.0, 1.0]
+#mean = [178.0, 198.0, 249.0]
+#stddev = [0.0, 3.0, 1.0]
+mean = [4.0,245.33,131.734]
+stddev = [0.335, 3.06,2.72]
 img = None
 camera = picamera.PiCamera()
 rect = []
@@ -45,10 +47,10 @@ def binarize_image(image, mean, stddev):
         @return - binarized version of the image
     '''
     # Calculate the bounds of the colors
-    lower_bound = np.array([mean[0] - 4*stddev[0], mean[1] - 4*stddev[1], \
-                   mean[2] - 4*stddev[2]])
-    upper_bound = np.array([mean[0] + 4*stddev[0], mean[1] + 4*stddev[1], \
-                   mean[2] + 4*stddev[2]])
+    lower_bound = np.array([mean[0] - 4*stddev[0], mean[1] - 8*stddev[1], \
+                   mean[2] - 8*stddev[2]])
+    upper_bound = np.array([mean[0] + 4*stddev[0], mean[1] + 8*stddev[1], \
+                   mean[2] + 8*stddev[2]])
     # Convert image to hsv
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     # Get pixels within the range and then threshold it
@@ -106,7 +108,7 @@ def find_cone():
     found = False
     curr_area = 0
     image_name = "temp.jpg"
-    for i in range(0, int(180/11.25)):
+    for i in range(0, int(360/11.25)):
         small_turn_right()
         camera.capture(image_name)
         camera_image = cv2.imread(image_name, cv2.IMREAD_COLOR)
@@ -117,15 +119,15 @@ def find_cone():
         cv2.imshow('binarized', binarized)
         cv2.waitKey(25)
         curr_area, left, right = get_area_and_left_right(binarized)
-        print "curr_area: ", curr_area
-        if curr_area > 100 and img.shape[1]/2 < right and img.shape[1] / 2 < left:
+        print "curr_area: ", curr_area, " ", left, " " , right,  " ", img.shape[0]
+        if curr_area > 100 and img.shape[1]/2 < right and img.shape[1] / 2 > left:
             found = True
             print "found"
             break
     if found:
-        while curr_area < 500:
+        while curr_area < 25000:
             enable_encoders()
-            enc_tgt(1,1,9)
+            enc_tgt(1,1,5)
             while(read_enc_status() == 1):
                 fwd()
             stop()
@@ -134,9 +136,11 @@ def find_cone():
             camera_image = cv2.imread(image_name, cv2.IMREAD_COLOR)
             img = resize(camera_image)
             binarized = binarize_image(img, mean, stddev)
+            cv2.imshow('binarized', binarized)
+            cv2.waitKey(25)
             curr_area, left, right = get_area_and_left_right(binarized)
             print "curr_area: ", curr_area
-            if curr_area < 100:
+            if curr_area <= 0:
                 print "Cone lost. Stopping"
                 break
             # Move left if passed the right bound of object
@@ -153,6 +157,7 @@ def find_cone():
                 sleep(0.1)
     else:
         print "Cone not found :("
+        
 def on_mouse(event, x, y, flags, params):
     '''
         Mouse callback that sets the rectangle
@@ -196,7 +201,7 @@ def get_color():
     return mean, stddev
 
 def select_color():
-    global mean, stddev
+    global mean, stddev, img
     # Get image for user to pick color
     image_name = 'image_id.jpg'
     # Take serveral pictures to 'warm up' the camera

@@ -427,8 +427,8 @@ def main():
     
     # Choosing different vertices as reference vertex
     robot_size = sqrt(14**2 + 23**2)
-    robot_vertices1 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
-    robot_vertices2 = [(0,0), (1 * robot_size, 0), (1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
+    robot_vertices1 = [(0,0), (1 * robot_size, 0), (1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
+    robot_vertices2 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
     robot_vertices3 = [(0,0), (1 * robot_size, 0), (1 * robot_size, -1 * robot_size), (0, -1 * robot_size)]
     robot_vertices4 = [(0,0), (-1 * robot_size, 0), (-1 * robot_size, 1 * robot_size), (0, 1 * robot_size)]
     all_robot_vertices = [robot_vertices1, robot_vertices2, robot_vertices3, robot_vertices4]

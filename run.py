@@ -2,12 +2,13 @@ from gopigo import *
 from math import *
 import math
 import time
+from find_cone import *
 
 path = []
 
 def turn(angle):
 	# angle in radians
-	#$ 5.625 degrees per encoder pulse
+	# 11.25 degrees per encoder pulse
 	
 	revolutions = abs(math.degrees(angle) / float(11.25))
 
@@ -51,9 +52,7 @@ def forward(distance):
 	disable_encoders()
 
 def move(tupe_angle_distance):
-	time.sleep(2)
 	turn(tupe_angle_distance[0])
-	time.sleep(2)
 	forward(tupe_angle_distance[1])
 
 def get_angles_and_dist(to_visit):
@@ -101,16 +100,13 @@ def make_path(input_file):
 
 def main():
 	global path
-	#make_path("output.txt")
-	make_path("test1.txt")
+	make_path("output.txt")
 	result = get_angles_and_dist(path)
 	print( result )
 
-	#set_left_speed(100)
-	#set_right_speed(100)
-
 	for i in range(0, len(result)):
 		move(result[i])
+	find_cone()
 
 if __name__ == "__main__":
 	main()
