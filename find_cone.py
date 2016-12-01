@@ -11,7 +11,7 @@ import atexit
 atexit.register(stop)
 
 mean = [178.0, 198.0, 249.0]
-std = [0.0, 3.0, 1.0]
+stddev = [0.0, 3.0, 1.0]
 img = None
 camera = picamera.PiCamera()
 
@@ -99,18 +99,26 @@ def get_area_and_left_right(image):
         return 0, 0, 0
     
 def find_cone():
-    global mean, std
+    global mean, stddev
     initial_left_turn()
     found = False
     curr_area = 0
-    for i in range(0, 180/11.25):
+    image_name = "temp.jpg"
+    for i in range(0, int(180/11.25)):
+        small_turn_right()
         camera.capture(image_name)
         camera_image = cv2.imread(image_name, cv2.IMREAD_COLOR)
         img = resize(camera_image)
+        cv2.imshow('image', img)
+        cv2.waitKey(25)
         binarized = binarize_image(img, mean, stddev)
+        cv2.imshow('binarized', binarized)
+        cv2.waitKey(25)
         curr_area, left, right = get_area_and_left_right(binarized)
+        print "curr_area: ", curr_area
         if curr_area > 100 and img.shape[1]/2 < right and img.shape[1] / 2 < left:
             found = True
+            print "found"
             break
     if found:
         while curr_area < 500:
@@ -125,8 +133,13 @@ def find_cone():
             img = resize(camera_image)
             binarized = binarize_image(img, mean, stddev)
             curr_area, left, right = get_area_and_left_right(binarized)
+            print "curr_area: ", curr_area
             if curr_area < 100:
                 print "Cone lost. Stopping"
                 break
     else:
         print "Cone not found :("
+
+
+if __name__ == "__main__":
+    find_cone()
