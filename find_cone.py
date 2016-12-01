@@ -10,10 +10,10 @@ except ImportError:
 import atexit
 atexit.register(stop)
 
-#mean = [178.0, 198.0, 249.0]
-#stddev = [0.0, 3.0, 1.0]
-mean = [4.0,245.33,131.734]
-stddev = [0.335, 3.06,2.72]
+mean = [178.0, 198.0, 249.0]
+stddev = [0.0, 3.0, 1.0]
+#mean = [4.0,245.33,131.734]
+#stddev = [0.335, 3.06,2.72]
 img = None
 camera = picamera.PiCamera()
 rect = []
@@ -119,10 +119,9 @@ def find_cone():
         cv2.imshow('binarized', binarized)
         cv2.waitKey(25)
         curr_area, left, right = get_area_and_left_right(binarized)
-        print "curr_area: ", curr_area, " ", left, " " , right,  " ", img.shape[0]
         if curr_area > 100 and img.shape[1]/2 < right and img.shape[1] / 2 > left:
             found = True
-            print "found"
+            print "Found cone."
             break
     if found:
         while curr_area < 25000:
@@ -139,7 +138,6 @@ def find_cone():
             cv2.imshow('binarized', binarized)
             cv2.waitKey(25)
             curr_area, left, right = get_area_and_left_right(binarized)
-            print "curr_area: ", curr_area
             if curr_area <= 0:
                 print "Cone lost. Stopping"
                 break
