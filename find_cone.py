@@ -14,6 +14,8 @@ mean = [178.0, 198.0, 249.0]
 stddev = [0.0, 3.0, 1.0]
 img = None
 camera = picamera.PiCamera()
+rect = []
+selecting = False
 
 def initial_left_turn():
     angle = 90.0 + 11.25
@@ -137,9 +139,81 @@ def find_cone():
             if curr_area < 100:
                 print "Cone lost. Stopping"
                 break
+            # Move left if passed the right bound of object
+            if img.shape[1] / 2 > right:
+                print 'Moved left'
+                enc_tgt(1,1,1)
+                left_rot()
+                sleep(0.1)
+            # Move right if passed the left bound of object
+            elif img.shape[1] /2 < left :
+                print 'Moved right'
+                enc_tgt(1,1,1)
+                right_rot()
+                sleep(0.1)
     else:
         print "Cone not found :("
+def on_mouse(event, x, y, flags, params):
+    '''
+        Mouse callback that sets the rectangle
+        Click and drag to create the rectangle
+    '''
+    global rect, selecting, img
+    if event == cv2.EVENT_LBUTTONDOWN and not selecting:
+        rect = [(x, y)]
+        selecting = True
+        print 'First point selected: ', rect
+    elif event == cv2.EVENT_LBUTTONUP and selecting:
+        rect.append((x, y))
+        selecting = False
+        print 'Second point selected: ', rect
 
+
+def get_rectangle():
+    '''
+        Get the rectangle selection from user and set it
+        as a global var
+    '''
+    global rect, img
+    wname = "PiCamera"
+    cv2.namedWindow(wname)
+    cv2.setMouseCallback(wname, on_mouse) 
+    cv2.imshow(wname, img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def get_color():
+    '''
+        Get the color mean and standard deviation from the
+        image and rectangle coodinates
+        @return - mean hsv color and standard deviation from that mean
+    '''
+    global rect, img
+    selection = img[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
+    hsv = cv2.cvtColor(selection, cv2.COLOR_BGR2HSV)
+    mean, stddev = cv2.meanStdDev(hsv)
+    print 'Color mean: ', mean, ' Color StdDev: ', stddev
+    return mean, stddev
+
+def select_color():
+    global mean, stddev
+    # Get image for user to pick color
+    image_name = 'image_id.jpg'
+    # Take serveral pictures to 'warm up' the camera
+    print 'Please wait; warming up the camera'
+    for i in range(0, 10):
+        camera.capture(image_name)
+        sleep(0.2)
+    camera_image = cv2.imread(image_name, cv2.IMREAD_COLOR)
+    img = resize(camera_image)
+    # User specifies the rectangle
+    get_rectangle()
+    # Get the color to track
+    mean, stddev = get_color()
+    # Binarize the image and get the original area/center
+    binarized = binarize_image(img, mean, stddev)
+    
 
 if __name__ == "__main__":
+    select_color()
     find_cone()
